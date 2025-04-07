@@ -1,0 +1,48 @@
+import json
+import http.client
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def lambda_handler(event, context):
+    logger.info("Lambda triggered with event: %s", json.dumps(event))
+
+    nuki_api_token = "ebcd3f3deddd17cc3b587d0da71faf12b5aaddf7bdac9d732899be6fd6ea546b3ee1f7a211928aca"
+    smartlock_id = "18180295796"
+
+    path = f"/smartlock"
+    headers = {
+        "Authorization": nuki_api_token,
+        "Content-Type": "application/json"
+    }
+
+    body = json.dumps({})
+
+    try:
+        logger.info("Sending request to Nuki API: GET %s", path)
+        conn = http.client.HTTPSConnection("api.nuki.io")
+        conn.request("GET", path, body=body, headers=headers)
+
+        response = conn.getresponse()
+        response_data = response.read().decode()
+
+        logger.info("Received response from Nuki: %s", response_data)
+
+        result = {
+            "statusCode": response.status,
+            "body": json.dumps({
+                "message": "Door unlocked successfully",
+                "response": response_data
+            })
+        }
+
+        logger.info("Lambda success response: %s", result)
+        return result
+
+    except Exception as e:
+        logger.error("Error during request: %s", str(e))
+        return {
+            "statusCode": 500,
+            "body": json.dumps({ "error": str(e) })
+        }
